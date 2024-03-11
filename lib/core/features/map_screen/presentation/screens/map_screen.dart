@@ -29,9 +29,12 @@ class _MyHomePageState extends State<MyHomePage> {
   };
   @override
   Widget build(BuildContext context) {
+     LatLng newLanLng;
     return Scaffold(
+
       body: Stack(
         children: [
+          
           GoogleMap(
               mapType: MapType.terrain,
               onMapCreated: (controller) => _controller.complete(controller),
@@ -39,8 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onTap: (val) {
                 BlocProvider.of<GeolocationCubit>(context)
                     .getLocationByLatLng(val);
-                markers.add(Marker(
-                    markerId: const MarkerId("Targetlocation"), position: val));
+                
               },
               initialCameraPosition: const CameraPosition(
                   target: LatLng(42.882004, 74.582748), zoom: 15)),
@@ -48,68 +50,92 @@ class _MyHomePageState extends State<MyHomePage> {
               child: BlocListener<GeolocationCubit, GeolocationState>(
             listener: (context, state) {
               if (state is GeolocationSuccess) {
-                addressController.text =
-                    state.model.results?.first.formattedAddress ?? "";
-                setState(() {});
+                if(state.geolocationModel==null){
+                  addressController.text =
+                    state.locationByAddressModel?.results?.first.formattedAddress ?? "";
+                    newLanLng=LatLng(state.locationByAddressModel?.results?.first.geometry?.location?.lat??0, state.geolocationModel?.results?.first.geometry?.location?.lng??0);
+                
+
+                }else{
+                  addressController.text =
+                    state.geolocationModel?.results?.first.formattedAddress ?? "";
+                    newLanLng=LatLng(state.geolocationModel?.results?.first.geometry?.location?.lat??0, state.geolocationModel?.results?.first.geometry?.location?.lng??0);
+              
+                }
+                 
+
+                markers.add(Marker(
+                    markerId: const MarkerId("Targetlocation"), position: newLanLng ));
+                    setState(() {
+                      
+                    });
               }
             },
-            child: Positioned(
+            child: Container(),
+            
+          )),
+          Positioned(
               bottom: 100,
-              left: 0,
               right: 0,
+              left: 0,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.165,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(color: Color(0xff1F212A)),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: TextField(
-                          style: const TextStyle(
-                              color: Color(0xffD0D0D0),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500),
-                          controller: addressController,
-                          decoration: InputDecoration(
-                              hintText: "Where would you go?",
-                              hintStyle: const TextStyle(
-                                  color: Color(0xffD0D0D0),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500),
-                              fillColor: const Color(0xff35383F),
-                              filled: true,
-                              prefixIcon: IconButton(
-                                  onPressed: () {},
-                                  icon: const Icon(
-                                    Icons.search,
-                                    color: Colors.grey,
-                                  )),
-                              border: const OutlineInputBorder(),
-                              enabledBorder: const OutlineInputBorder(
-                                  borderSide:
-                                      BorderSide(color: Color(0xffEDAE10)))),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                child: AddressContainer(addressController: addressController,
+                onPressed: ()
+                {BlocProvider.of<GeolocationCubit>(context).getLocationByAddress(addressController.text);},),
               ),
             ),
-          ))
-          // const Center(child: BlocBuilder<GeolocationCubit, GeolocationState>(
-          //   builder: (context, state) {
-          //     if (state is GeolocationSuccess) {
-          //       return Text(
-          //         "hhjdjdjghhf",
-          //         style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-          //       );
-          //     }
-          //     return SizedBox();
-          //   },
-          // )),
+        ],
+      ),
+    );
+  }
+}
+
+class AddressContainer extends StatelessWidget {
+  const AddressContainer({
+    super.key,
+    required this.addressController, required this.onPressed,
+  });
+
+  final TextEditingController addressController;
+  final Function() onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.165,
+      width: double.infinity,
+      decoration: const BoxDecoration(color: Color(0xff1F212A)),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              style: const TextStyle(
+                  color: Color(0xffD0D0D0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500),
+              controller: addressController,
+              decoration: InputDecoration(
+                  hintText: "Where would you go?",
+                  hintStyle: const TextStyle(
+                      color: Color(0xffD0D0D0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500),
+                  fillColor: const Color(0xff35383F),
+                  filled: true,
+                  prefixIcon: IconButton(
+                      onPressed: onPressed,
+                      icon: const Icon(
+                        Icons.search,
+                        color: Colors.grey,
+                      )),
+                  border: const OutlineInputBorder(),
+                  enabledBorder: const OutlineInputBorder(
+                      borderSide:
+                          BorderSide(color: Color(0xffEDAE10)))),
+            ),
+          ),
         ],
       ),
     );
